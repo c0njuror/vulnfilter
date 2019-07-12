@@ -17,7 +17,8 @@ Way 1: As a normal proxy
 
 Way 2: As a reverse proxy
  - If your website has a wildcard certificate you can create a subdomain on your website (e.g. hack.example.org) and use nginx on the subdomain and point it to your mitmproxy (proxy_pass http://127.0.0.1:8080)
- - NB: you would have to use a rewrite rule and rewrite allt links to example.org to hack.example.org (flow.response.content = flow.response.content.replace(b'example.org', b'hack.example.org')
+ - NB: you would have to use a rewrite rule and rewrite all links to example.org to hack.example.org (flow.response.content = flow.response.content.replace(b'example.org', b'hack.example.org')
+
 
 """
 
@@ -82,6 +83,7 @@ def response(flow: http.HTTPFlow) -> None:
     cookies = [re.sub(r';\s*secure\s*', '', s) for s in cookies]
     flow.response.headers.set_all('Set-Cookie', cookies)
 
+# SSL STRIP END #
 
 ### RE-ROUTING EXAMPLES ####
 
@@ -106,9 +108,19 @@ def response(flow: http.HTTPFlow) -> None:
             {"Location": 'http://192.168.0.1/action.php' + last}  # (optional) headers    
         )
 
+    # forward the value of the sql parameter to an internal server on port 800, or any website that has a sql injection and send the response back (could be used to demonstrate SQL injection or any parameter injection)
+    if "?sql=" in flow.request.pretty_url:
+        url = urllib.parse.unquote(flow.request.path) #Decodes URL to UTF
+        last = url.split('sql=')[1] #Get whats after sql=
+        f=urlopen('http://127.0.0.1:800/index.php?SQLparam=%s' % last)
+        remoteValue=f.read()
+        custom_response=http.HTTPResponse.make(200,remoteValue,{},)
+        flow.response.content=custom_response.content
+
+
 ### MISC EXAMPLES ####
 
-   # CORS - Allow any origin (you could modify any headers this way).
+   # CORS - Allow any origin (you could modify any response headers this way).
 #    flow.response.headers['Access-Control-Allow-Origin'] = "*"
 
    # strip text in response body (in case you would like to replace some text in the response)
@@ -119,7 +131,7 @@ def response(flow: http.HTTPFlow) -> None:
         tag_pattern = b'<script>'
         flow.response.content = re.sub(tag_pattern, b'<script>//flag:8F4B96646F01AB7AA64A1814ECCB230B' + flow.request.pretty_url, flow.response.content, flags=re.IGNORECASE)
 
-  # modify reponse if full url matches (could be used to demonstrate command injection - static response)
+    # modify reponse if full url matches (could be used to demonstrate command injection - static response)
     if flow.request.pretty_url == "https://www.example.org/?cmd=whoami":
         flow.response = http.HTTPResponse.make(
             200,  # (optional) status code
@@ -184,15 +196,15 @@ def response(flow: http.HTTPFlow) -> None:
         tag_pattern = b'<head>'
         flow.response.content = re.sub(tag_pattern, b'<script>alert("Congratulations! Your first flag is: 8F4B96646F01AB7AA64A1814ECCB230B")</script><head>',flow.response.content, flags=re.IGNORECASE)
  
-   # If URL is https://www.bsideslv.org/donors/?eventID= then alert whatever is behind the eventID parameter (simulates an eventID parameter on bsideslv.org and reflects the value in response body)
-    if "https://www.bsideslv.org/donors/?eventID=" in flow.request.pretty_url: 
+   # If URL contains /donors/?eventID= then alert whatever is behind the eventID parameter (simulates an eventID parameter on bsideslv.org and reflects the value in response body)
+    if "/donors/?eventID=" in flow.request.pretty_url: 
         tag_pattern = b'This page last updated'
         tag_replace = urllib.parse.unquote(flow.request.path) #Decodes URL to UTF
         tag_replace = tag_replace.split('eventID=')[1] #Only show whats after eventID=..
         flow.response.content = re.sub(tag_pattern, b'Event ID: '+str.encode(tag_replace)+b'<br><br>This page last updated', flow.response.content, flags=re.IGNORECASE)
 
-   # Reflect content of q parameter in decoded format on bing (simulates an XSS in the search query on bing)
-    if "https://www.bing.com/search?q=" in flow.request.pretty_url: 
+   # Reflect content of q parameter in decoded format on website with seaqrch queryes (this simulates an XSS in the search query on bing)
+    if "search?q=" in flow.request.pretty_url: 
         tag_pattern = b'page.serp%26bq%3d'
         tag_replace = urllib.parse.unquote(flow.request.path) #Decodes URL to UTF
         #tag_replace = tag_replace.split('=')[1] #Only keep whats after the first = sign..
@@ -221,7 +233,6 @@ def response(flow: http.HTTPFlow) -> None:
         )
         flow.response.content=custom_response.content
         
-        
     # modify reponse if url matches ?file=../../../etc/passwd and include a local file (could be used to demonstrate path traversal - you can ofcourse make multiple of these with other files)
     if "?file=../../../etc/passwd" in flow.request.pretty_url:
         f=open("/root/test/mitm/files/passwd.txt","rb")
@@ -232,7 +243,6 @@ def response(flow: http.HTTPFlow) -> None:
                 {},
         )
         flow.response.content=custom_response.content
-        
 
     # modify reponse if url matches ?file=../../../iso_8859-1.txt and include a remote file (could be used to demonstrate path traversal - you can ofcourse make multiple of these with other files)
     # you could also make this an arbitrary file read (look at next example for inspiration).
@@ -253,14 +263,8 @@ def response(flow: http.HTTPFlow) -> None:
         last = url.split('../../../../')[1] #Get whats after ../../../ 
         f=open('/root/test/mitm/files/%s' % last,"rb")
         localFile=f.read()
-
-        custom_response=http.HTTPResponse.make(
-            200,
-            localFile,
-                {},
-        )
+        custom_response=http.HTTPResponse.make(200,localFile,{},)
         flow.response.content=custom_response.content
-
 
 
 
