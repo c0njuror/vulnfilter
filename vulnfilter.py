@@ -131,7 +131,7 @@ def response(flow: http.HTTPFlow) -> None:
         tag_pattern = b'<script>'
         flow.response.content = re.sub(tag_pattern, b'<script>//flag:8F4B96646F01AB7AA64A1814ECCB230B' + flow.request.pretty_url, flow.response.content, flags=re.IGNORECASE)
 
-    # modify reponse if full url matches (could be used to demonstrate command injection - static response)
+  # modify reponse if full url matches (could be used to demonstrate command injection - static response)
     if flow.request.pretty_url == "https://www.example.org/?cmd=whoami":
         flow.response = http.HTTPResponse.make(
             200,  # (optional) status code
@@ -196,15 +196,15 @@ def response(flow: http.HTTPFlow) -> None:
         tag_pattern = b'<head>'
         flow.response.content = re.sub(tag_pattern, b'<script>alert("Congratulations! Your first flag is: 8F4B96646F01AB7AA64A1814ECCB230B")</script><head>',flow.response.content, flags=re.IGNORECASE)
  
-   # If URL contains /donors/?eventID= then alert whatever is behind the eventID parameter (simulates an eventID parameter on bsideslv.org and reflects the value in response body)
-    if "/donors/?eventID=" in flow.request.pretty_url: 
+   # If URL is https://www.bsideslv.org/donors/?eventID= then alert whatever is behind the eventID parameter (simulates an eventID parameter on bsideslv.org and reflects the value in response body)
+    if "https://www.bsideslv.org/donors/?eventID=" in flow.request.pretty_url: 
         tag_pattern = b'This page last updated'
         tag_replace = urllib.parse.unquote(flow.request.path) #Decodes URL to UTF
         tag_replace = tag_replace.split('eventID=')[1] #Only show whats after eventID=..
         flow.response.content = re.sub(tag_pattern, b'Event ID: '+str.encode(tag_replace)+b'<br><br>This page last updated', flow.response.content, flags=re.IGNORECASE)
 
-   # Reflect content of q parameter in decoded format on website with seaqrch queryes (this simulates an XSS in the search query on bing)
-    if "search?q=" in flow.request.pretty_url: 
+   # Reflect content of q parameter in decoded format on bing (simulates an XSS in the search query on bing)
+    if "https://www.bing.com/search?q=" in flow.request.pretty_url: 
         tag_pattern = b'page.serp%26bq%3d'
         tag_replace = urllib.parse.unquote(flow.request.path) #Decodes URL to UTF
         #tag_replace = tag_replace.split('=')[1] #Only keep whats after the first = sign..
@@ -266,6 +266,24 @@ def response(flow: http.HTTPFlow) -> None:
         custom_response=http.HTTPResponse.make(200,localFile,{},)
         flow.response.content=custom_response.content
 
+### AUTHENTICATION EXAMPLES ###
 
-
+    # simulate authentication (could be used to demonstrate brute force)
+    if "login.php?username=" in flow.request.pretty_url:
+        if "login.php?username=admin&password=123456" in flow.request.pretty_url:
+            flow.response = http.HTTPResponse.make(
+                200,  # (optional) status code
+                b"Flag: 8F4B96646F01AB7AA64A1814ECCB230B <br>"+
+                b"You have successfully authenticated!",  # (optional) content
+                {"Content-Type": "text/html"}  # (optional) headers
+            )
+            flow.response.content=custom_response.content
+        else:
+            flow.response = http.HTTPResponse.make(
+            403,  # (optional) status code
+            b"Wrong username or password!",  # (optional) content
+            {"Content-Type": "text/html"}  # (optional) headers
+            )
+            flow.response.content=custom_response.content
+        
 
