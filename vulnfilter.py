@@ -220,7 +220,7 @@ def response(flow: http.HTTPFlow) -> None:
                 {},
         )
         flow.response.content=custom_response.content
-        ctx.log.info("Passwd file was discovered.")
+        
         
     # modify reponse if url matches ?file=../../../etc/passwd and include a local file (could be used to demonstrate path traversal - you can ofcourse make multiple of these with other files)
     if "?file=../../../etc/passwd" in flow.request.pretty_url:
@@ -232,7 +232,7 @@ def response(flow: http.HTTPFlow) -> None:
                 {},
         )
         flow.response.content=custom_response.content
-        ctx.log.info("Passwd file was discovered.")
+        
 
     # modify reponse if url matches ?file=../../../iso_8859-1.txt and include a remote file (could be used to demonstrate path traversal - you can ofcourse make multiple of these with other files)
     # you could also make this an arbitrary file read (look at next example for inspiration).
@@ -245,7 +245,6 @@ def response(flow: http.HTTPFlow) -> None:
                 {},
         )
         flow.response.content=custom_response.content
-        ctx.log.info("Passwd file was discovered.")
 
     # modify reponse if url matches ?file=../../../etc/passwd and include an arbitrary local file (could be used to demonstrate path traversal - you can ofcourse make multiple of these with other files)
     # if you create the file /root/test/mitm/files/etc/passwd on the server, then by requesting ?file=../../../../etc/passwd in the browser you would get this file. Use with caution. 
@@ -261,7 +260,6 @@ def response(flow: http.HTTPFlow) -> None:
                 {},
         )
         flow.response.content=custom_response.content
-        ctx.log.info("Passwd file was discovered.")
 
 
 
