@@ -26,5 +26,3 @@ Way 2: As a reverse proxy
  - If your website has a wildcard certificate you can create a subdomain on your website (e.g. hack.example.org) and use nginx on the subdomain and point it to your mitmproxy (proxy_pass http://127.0.0.1:8080)
  - NB: you would have to use a rewrite rule and rewrite allt links to example.org to hack.example.org (flow.response.content = flow.response.content.replace(b'example.org', b'hack.example.org')
 
-
-"""
