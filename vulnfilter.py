@@ -8,8 +8,9 @@ mitmproxy allows you to modify HTTP content, and when you have full access to al
 For advanced backend vulnerabilities such as XXE, Command Injection, SQL injection etc. that requires a more dynamic response you can modify the response to point the browser to your vulnerable backend server.
 
 Howto connect:
+ - In a on a machine (Kali for example) run: mitmproxy -s vulnfilter.py 
  - import /.mitmproxy/mitmproxy-ca.pem into the browser and proxy tool.
- - Create a new profile or go to History in your browser and press forget URL on any URL that you want to run through this filter.
+ - Create a new profile OR go to history in your browser and press forget URL on any URL that you want to run through this filter.
  - Point your proxy tool such as Burp Suite proxy to upstream to the IP of mitmproxy and port 8080. Point your browser to your proxy tool.
 
 """
